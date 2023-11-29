@@ -1,0 +1,103 @@
+[CommandMethod("hk-zqzb-findstr")]
+        public void hkzqzbfindstr()
+        {
+            Document doc = HKApplier.DocumentManager.MdiActiveDocument;
+            if(hkzc.hkzccg()==true)
+            {
+                PromptKeywordOptions ppkey = new PromptKeywordOptions("\n选择查找");
+                ppkey.Keywords.Add("N屏幕拾取");
+                ppkey.Keywords.Add("Y输入具体内容");
+                ppkey.Keywords.Default = "N屏幕拾取";
+                PromptResult tsres = doc.Editor.GetKeywords(ppkey);
+                if(tsres.StringResult== "N屏幕拾取")
+                {
+                    TypedValue[] KKD = new TypedValue[1];
+                    KKD.SetValue(new TypedValue(0, "TEXT"), 0);
+                    SelectionFilter sty = new SelectionFilter(KKD);
+                    PromptSelectionOptions ss = new PromptSelectionOptions();
+                    ss.MessageForAdding="\n选择查找文字:";
+                    PromptSelectionResult ent = doc.Editor.GetSelection(ss,sty);
+                    TypedValue[] ty = new TypedValue[2];
+                    string name = null;
+                    string layer = null;
+                    string lr = null;
+                    using (Transaction tr = doc.Database.TransactionManager.StartTransaction())
+                    {
+                        DBText DB = tr.GetObject(ent.Value.GetObjectIds()[0], OpenMode.ForRead) as DBText;
+                        name = DB.GetRXClass().DxfName;
+                        layer = DB.Layer;
+                        lr = DB.TextString;
+                    }
+                    TypedValue[] KKK = new TypedValue[]
+                    {
+                        new TypedValue(0,name),
+                        new TypedValue(1,lr),
+                        new TypedValue(8,layer)
+                    };
+                    SelectionFilter SETY = new SelectionFilter(KKK);
+                    PromptSelectionResult SSGET = doc.Editor.SelectAll(SETY);
+                    if(SSGET.Status==PromptStatus.OK&&SSGET.Value!=null)
+                    {
+                        ObjectId[] OBJ = SSGET.Value.GetObjectIds();
+                        using (Transaction TR = doc.Database.TransactionManager.StartTransaction())
+                        {
+                            for(int I=0;I<OBJ.Length;I++)
+                            {
+                                DBText ENT = TR.GetObject(OBJ[I], OpenMode.ForRead) as DBText;
+                                hkCAD.hknewJCLine(ENT.Position, "指线层");
+                            }
+                            TR.Commit();
+                        }
+                        HKApplier.ShowAlertDialog("共找到" + OBJ.Length.ToString() + "个文字!");
+                    }
+                }
+                if(tsres.StringResult== "Y输入具体内容")
+                {
+                    PromptStringOptions pr = new PromptStringOptions("\n请输入要查找的内容：");
+                    PromptResult lr = doc.Editor.GetString(pr);
+                    pr.Message = "\n请输入文字内容所在图层名：";
+                    PromptResult lrlayer = doc.Editor.GetString(pr);
+                    if(lr!=null&&lrlayer!=null)
+                    {
+                        TypedValue[] lrss = new TypedValue[]
+                        {
+                            new TypedValue(0,"TEXT"),
+                            new TypedValue(8,lrlayer.StringResult),
+                            new TypedValue(1,lr.StringResult)
+                        };
+                        SelectionFilter KKFTY = new SelectionFilter(lrss);
+                        PromptSelectionResult SSLR = doc.Editor.SelectAll(KKFTY);
+                        if(SSLR.Status==PromptStatus.OK&&SSLR.Value!=null)
+                        {
+                            ObjectId[] kkid = SSLR.Value.GetObjectIds();
+                            using (Transaction tr = doc.Database.TransactionManager.StartTransaction())
+                            {
+                                for(int i=0;i<kkid.Length;i++)
+                                {
+                                    DBText dx = tr.GetObject(kkid[i], OpenMode.ForRead) as DBText;
+                                    hkCAD.hknewJCLine(dx.Position, "指线层");
+                                }
+                                tr.Commit();
+                            }
+                            HKApplier.ShowAlertDialog("共找到" + kkid.Length.ToString() + "个文字内容!");
+                            return;
+                        }
+                        else
+                        {
+                            doc.Editor.WriteMessage("\n未到指定内容!");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        doc.Editor.WriteMessage("\n输入要素不全，不能进行查找!");
+                        return;
+                    }
+                }
+                
+            }
+            else
+            {
+                doc.Editor.WriteMessage("\n程序未注册!");
+            }
+        }
